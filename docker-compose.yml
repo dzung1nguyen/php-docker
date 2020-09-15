@@ -1,0 +1,138 @@
+version: '3'
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+
+services: 
+  
+### app ###########################################
+  app:
+    build: 
+      context: ./app
+      args:
+        - INSTALL_PHP=${INSTALL_PHP}
+        - PHP_VERSION=${PHP_VERSION}
+        - INSTALL_NODE=${INSTALL_NODE}
+        - INSTALL_NPM_GULP=${INSTALL_NPM_GULP}
+        - INSTALL_NPM_BOWER=${INSTALL_NPM_BOWER}
+        - INSTALL_NPM_VUE_CLI=${INSTALL_NPM_VUE_CLI}
+        - INSTALL_NPM_ANGULAR_CLI=${INSTALL_NPM_ANGULAR_CLI}
+        - PUID=${APP_PUID}
+        - PGID=${APP_PGID}
+    container_name: laravel_app
+    volumes: 
+      - ${LOCAL_PATH}:${DOCKER_PATH}
+    networks: 
+      - backend
+    links:
+      - docker-in-docker
+
+### nginx ###########################################
+  nginx:
+    build: 
+      context: ./nginx
+    container_name: laravel_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ${LOCAL_PATH}:${DOCKER_PATH}
+      - ./nginx/sites/:/etc/nginx/sites-available
+    depends_on:
+      - php
+    networks:
+      - frontend
+      - backend
+
+### mysql ###########################################
+  mysql:
+    build:
+      context: ./mysql
+      args:
+        - MYSQL_VERSION=${MYSQL_VERSION}
+    container_name: laravel_mysql
+    tty: true
+    ports: 
+      - "3306:3306"
+    volumes: 
+      - ${LOCAL_DATA_PATH}/mysql:/var/lib/mysql
+      - ./mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    environment:
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    networks: 
+      - backend
+
+### phpMyAdmin ###########################################
+# phpmyadmin:
+#   build: ./phpmyadmin
+#   environment:
+#     - PMA_ARBITRARY=1
+#     - MYSQL_USER=default
+#     - MYSQL_PASSWORD=secret
+#     - MYSQL_ROOT_PASSWORD=secret
+#   ports:
+#     - "8080:80"
+#     - "8081:443"
+#   depends_on:
+#     - "mysql"
+#   networks:
+#     - frontend
+#     - backend
+
+### php ###########################################
+  php:
+    build: 
+      context: ./php
+      args:
+        - PHP_VERSION=${PHP_VERSION}
+        - docker-in-docker:/certs/client
+    container_name: laravel_php
+    volumes: 
+      - ./php/php${PHP_VERSION}.ini:/usr/local/etc/php/php.ini
+      - ${LOCAL_PATH}:${DOCKER_PATH}
+    ports: 
+      - "9000:9000"
+    networks: 
+      - backend
+    depends_on:
+        - app
+    links:
+        - docker-in-docker
+
+### PHP Worker ############################################
+# php-worker:
+#   build:
+#     context: ./php-worker
+#     args:
+#       - PHP_VERSION=${PHP_VERSION}
+#   container_name: laravel_php_worker
+#   volumes:
+#     - ${LOCAL_PATH}:${DOCKER_PATH}
+#     - ./php-worker/conf.d:/etc/supervisor/conf.d
+#     - ./php-worker/logs:/var/log/supervisor
+#   ports:
+#     - 9001:9001
+#   depends_on:
+#     - app
+#   extra_hosts:
+#     - "dockerhost:${DOCKER_HOST_IP}"
+#   networks:
+#     - backend
+
+### Docker-in-Docker ################################################
+  docker-in-docker:
+    image: docker:dind
+    privileged: true
+    volumes:
+      - ${LOCAL_PATH}:${DOCKER_PATH}
+      - ${LOCAL_DATA_PATH}/dind:/var/lib/docker
+    expose:
+      - 2375
+    networks:
+      - backend
