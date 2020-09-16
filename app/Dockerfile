@@ -15,7 +15,8 @@ ENV LC_CTYPE=en_US.UTF-8
 ENV LANG=en_US.UTF-8
 ENV TERM xterm
 
-
+# Start as root
+USER root
 # Add a non-root user to prevent files being created with root permissions on host machine.
 # Add a non-root user to prevent files being created with root permissions on host machine.
 ARG PUID=1000
@@ -27,9 +28,9 @@ ENV PGID ${PGID}
 RUN set -xe; \
     apt-get update -yqq && \
 #   pecl channel-update pecl.php.net && \
-    groupadd -g ${PGID} xxx && \
-    useradd -u ${PUID} -g xxx -m xxx -G docker_env && \
-    usermod -p "*" xxx -s /bin/bash && \
+    groupadd -g ${PGID} alex && \
+    useradd -u ${PUID} -g alex -m alex -G docker_env && \
+    usermod -p "*" alex -s /bin/bash && \
     apt-get install -yqq \
       apt-utils \
       #
@@ -116,15 +117,22 @@ RUN if [ ${INSTALL_PHP} = true ]; then \
         mv composer.phar /usr/local/bin/composer \
 ;fi        
 
-# Start as root
-USER root
+
+# Start as alex
+USER alex
+RUN echo "" >> ~/.bashrc && \
+    echo 'export PATH="/var/www/vendor/bin:$PATH"' >> ~/.bashrc
+
+
+# Start as alex
+USER alex
 
 ###########################################################################
 # Node / NVM:
 ###########################################################################
 
 # Check if NVM needs to be installed
-ENV NVM_DIR /home/root/.nvm
+ENV NVM_DIR /home/alex/.nvm
 ARG INSTALL_NODE=false
 ARG INSTALL_NPM_GULP=false
 ARG INSTALL_NPM_BOWER=false
@@ -153,6 +161,8 @@ RUN if [ ${INSTALL_NODE} = true ]; then \
     && ln -s `npm bin --global` $NVM_DIR/.node-bin \
 ;fi
 
+
+
 # Wouldn't execute when added to the RUN statement in the above block
 # Source NVM when loading bash since ~/.profile isn't loaded on non-login shell
 RUN if [ ${INSTALL_NODE} = true ]; then \
@@ -161,13 +171,15 @@ RUN if [ ${INSTALL_NODE} = true ]; then \
         echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm' >> ~/.bashr \
 ;fi
 
+# Start as root
+USER root
 RUN if [ ${INSTALL_NODE} = true ]; then \
     echo "" >> ~/.bashrc && \
-        echo 'export NVM_DIR="/home/root/.nvm"' >> ~/.bashrc && \
+        echo 'export NVM_DIR="/home/alex/.nvm"' >> ~/.bashrc && \
         echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm' >> ~/.bashrc \
 ;fi
 # Add PATH for node
-ENV PATH $PATH:/home/root/.node-bin
+ENV PATH $PATH:/home/alex/.node-bin
 
 # Make it so the node modules can be executed with 'docker-compose exec'
 # We'll create symbolic links into '/usr/local/bin'.
@@ -182,6 +194,13 @@ RUN if [ ${INSTALL_NODE} = true ]; then \
         ln -s $NODE_MODS_DIR/vue-cli/bin/vue-init /usr/local/bin/vue-init && \
         ln -s $NODE_MODS_DIR/vue-cli/bin/vue-list /usr/local/bin/vue-list \
 ;fi
-EXPOSE 4200
+
+USER root
+
+# Clean up
+RUN apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
+    rm /var/log/lastlog /var/log/faillog
+    
 # Set default work directory
 WORKDIR /var/www/html
