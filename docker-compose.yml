@@ -6,6 +6,16 @@ networks:
   backend:
     driver: bridge
 
+volumes:
+  mysql:
+    driver: ${VOLUMES_DRIVER}
+  mysql:
+    driver: ${VOLUMES_DRIVER}
+  redis:
+    driver: ${VOLUMES_DRIVER}
+  docker-in-docker:
+    driver: ${VOLUMES_DRIVER}
+
 services: 
   
 ### app ###########################################
@@ -20,6 +30,8 @@ services:
         - INSTALL_NPM_BOWER=${INSTALL_NPM_BOWER}
         - INSTALL_NPM_VUE_CLI=${INSTALL_NPM_VUE_CLI}
         - INSTALL_NPM_ANGULAR_CLI=${INSTALL_NPM_ANGULAR_CLI}
+        - INSTALL_YARN=${INSTALL_YARN}
+        - YARN_VERSION=${YARN_VERSION}
         - PUID=${APP_PUID}
         - PGID=${APP_PGID}
     container_name: laravel_app
@@ -27,6 +39,8 @@ services:
       - ${LOCAL_PATH}:${DOCKER_PATH}
     networks: 
       - backend
+    ports:
+      - "9527:9527"
     links:
       - docker-in-docker
 
@@ -68,7 +82,17 @@ services:
     networks: 
       - backend
 
-### phpMyAdmin ###########################################
+### Redis ################################################
+  redis:
+    build: ./redis
+    volumes:
+      - ${LOCAL_DATA_PATH}/redis:/data
+    ports:
+      - "${REDIS_PORT}:6379"
+    networks:
+      - backend
+      
+## phpMyAdmin ###########################################
 # phpmyadmin:
 #   build: ./phpmyadmin
 #   environment:
@@ -78,7 +102,6 @@ services:
 #     - MYSQL_ROOT_PASSWORD=secret
 #   ports:
 #     - "8080:80"
-#     - "8081:443"
 #   depends_on:
 #     - "mysql"
 #   networks:

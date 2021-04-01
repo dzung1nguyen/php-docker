@@ -13,7 +13,7 @@ ADD https://raw.githubusercontent.com/mlocati/docker-php-extension-installer/mas
 
 # PHP extensions https://github.com/mlocati/docker-php-extension-installer
 RUN chmod uga+x /usr/local/bin/install-php-extensions && sync && \
-    install-php-extensions gd imagick intl mysqli pdo_mysql xsl zip exif
+    install-php-extensions gd imagick intl mysqli pdo_mysql xsl zip exif redis
 
 # Install composer
 RUN cd /var/tmp/ && curl -s http://getcomposer.org/installer | php && mv ./composer.phar /usr/local/bin/composer
