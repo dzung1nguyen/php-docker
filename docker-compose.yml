@@ -41,6 +41,7 @@ services:
       - backend
     ports:
       - "9527:9527"
+      - "8080:8080"
     links:
       - docker-in-docker
 
@@ -101,7 +102,7 @@ services:
 #     - MYSQL_PASSWORD=secret
 #     - MYSQL_ROOT_PASSWORD=secret
 #   ports:
-#     - "8080:80"
+#     - "8000:80"
 #   depends_on:
 #     - "mysql"
 #   networks:
