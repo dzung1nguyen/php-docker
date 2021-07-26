@@ -2,8 +2,6 @@ FROM nginx:alpine
 
 COPY nginx.conf /etc/nginx/
 
-COPY ./upstream-header.conf /etc/nginx/
-
 RUN apk update \
     && apk upgrade \
     && apk --update add logrotate \

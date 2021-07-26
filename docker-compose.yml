@@ -26,8 +26,6 @@ services:
         - INSTALL_PHP=${INSTALL_PHP}
         - PHP_VERSION=${PHP_VERSION}
         - INSTALL_NODE=${INSTALL_NODE}
-        - INSTALL_NPM_GULP=${INSTALL_NPM_GULP}
-        - INSTALL_NPM_BOWER=${INSTALL_NPM_BOWER}
         - INSTALL_NPM_VUE_CLI=${INSTALL_NPM_VUE_CLI}
         - INSTALL_NPM_ANGULAR_CLI=${INSTALL_NPM_ANGULAR_CLI}
         - INSTALL_YARN=${INSTALL_YARN}
@@ -58,6 +56,7 @@ services:
       - ./nginx/sites/:/etc/nginx/sites-available
     depends_on:
       - php
+      # - php8-fpm
     networks:
       - frontend
       - backend
@@ -84,14 +83,14 @@ services:
       - backend
 
 ### Redis ################################################
-  redis:
-    build: ./redis
-    volumes:
-      - ${LOCAL_DATA_PATH}/redis:/data
-    ports:
-      - "${REDIS_PORT}:6379"
-    networks:
-      - backend
+# redis:
+#   build: ./redis
+#   volumes:
+#     - ${LOCAL_DATA_PATH}/redis:/data
+#   ports:
+#     - "${REDIS_PORT}:6379"
+#   networks:
+#     - backend
       
 ## phpMyAdmin ###########################################
 # phpmyadmin:
@@ -128,6 +127,24 @@ services:
         - app
     links:
         - docker-in-docker
+
+# ### php8 ###########################################
+#   php8-fpm:
+#     build: 
+#       context: ./php8-fpm
+#       args:
+#         - PHP_VERSION=${PHP_VERSION}
+#         - docker-in-docker:/certs/client
+#     container_name: laravel_php8
+#     volumes: 
+#       - ./php/php8.0.ini:/usr/local/etc/php/php.ini
+#       - ${LOCAL_PATH}:${DOCKER_PATH}
+#     ports: 
+#       - "9008:9008"
+#     networks: 
+#       - backend
+#     links:
+#         - docker-in-docker
 
 ### PHP Worker ############################################
 # php-worker:

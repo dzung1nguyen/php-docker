@@ -1,10 +1,4 @@
-#
-#--------------------------------------------------------------------------
-# Image Setup
-#--------------------------------------------------------------------------
-#
-
-FROM phusion/baseimage:0.11
+FROM phusion/baseimage:focal-1.0.0
 
 RUN DEBIAN_FRONTEND=noninteractive
 RUN locale-gen en_US.UTF-8
@@ -28,115 +22,22 @@ ENV PGID ${PGID}
 RUN set -xe; \
     apt-get update -yqq && \
 #   pecl channel-update pecl.php.net && \
-    groupadd -g ${PGID} alex && \
-    useradd -u ${PUID} -g alex -m alex -G docker_env && \
-    usermod -p "*" alex -s /bin/bash && \
+    groupadd -g ${PGID} auser && \
+    useradd -u ${PUID} -g auser -m auser -G docker_env && \
+    usermod -p "*" auser -s /bin/bash && \
     apt-get install -yqq \
-      apt-utils \
-      #
-      #--------------------------------------------------------------------------
-      # Mandatory Software's Installation
-      #--------------------------------------------------------------------------
-      #
-      # Mandatory Software's such as ("php-cli", "git", "vim", ....) are
-      # installed on the base image 'alex/workspace' image. If you want
-      # to add more Software's or remove existing one, you need to edit the
-      # base image (https://github.com/Laradock/workspace).
-      #
-      # next lines are here because there is no auto build on dockerhub see https://github.com/alex/alex/pull/1903#issuecomment-463142846
-      libzip-dev zip unzip \
-      # Install the zip extension
-      # nasm
-      nasm
+    apt-utils
 
-
-
-# Add the "PHP 7" ppa
- RUN apt-get install -y software-properties-common && \
-    add-apt-repository -y ppa:ondrej/php
-#
-#--------------------------------------------------------------------------
-# Software's Installation
-#--------------------------------------------------------------------------
-#
-RUN echo 'DPkg::options { "--force-confdef"; };' >> /etc/apt/apt.conf
-
-ARG INSTALL_PHP=false
-ARG PHP_VERSION=7.4
-
-RUN if [ ${INSTALL_PHP} = true ]; then \
-    if [ ${PHP_VERSION} = "7.4" ]; then \
-        apt-get update && \
-        apt-get upgrade -y && \
-        apt-get install -y --allow-downgrades --allow-remove-essential \
-            --allow-change-held-packages \
-            php7.4-cli \
-            php7.4-common \
-            php7.4-curl \
-            php7.4-intl \
-            php7.4-json \
-            php7.4-xml \
-            php7.4-mbstring \
-            php7.4-mysql \
-            php7.4-pgsql \
-            php7.4-sqlite \
-            php7.4-sqlite3 \
-            php7.4-zip \
-            php7.4-bcmath \
-            php7.4-memcached \
-            php7.4-gd \
-            php7.4-imagick \
-            php7.4-dev \
-            pkg-config \
-            libcurl4-openssl-dev \
-            libedit-dev \
-            libssl-dev \
-            libxml2-dev \
-            xz-utils \
-            libsqlite3-dev \
-            sqlite3 \
-            git \
-            curl \
-            vim \
-            nano \
-            postgresql-client \
-        && apt-get clean \
-    ;fi \
-;fi
-
-ARG PHP_VERSION
-
-#-----------------------------------
-# COMPOSER:
-#-----------------------------------
-
-# Install composer and add its bin to the PATH.
-RUN if [ ${INSTALL_PHP} = true ]; then \
-    curl -s http://getcomposer.org/installer | php && \
-        echo "export PATH=${PATH}:/var/www/vendor/bin" >> ~/.bashrc && \
-        mv composer.phar /usr/local/bin/composer && \
-        composer self-update \
-;fi        
-
-
-# Start as alex
-USER alex
-RUN echo "" >> ~/.bashrc && \
-    echo 'export PATH="/var/www/vendor/bin:$PATH"' >> ~/.bashrc
-
-
-# Start as alex
-USER alex
+# Start as auser
+USER auser
 
 #-----------------------------------
 # NPM:
 #-----------------------------------
 
 # Check if NVM needs to be installed
-ENV NVM_DIR /home/alex/.nvm
+ENV NVM_DIR /home/auser/.nvm
 ARG INSTALL_NODE=false
-ARG INSTALL_NPM_GULP=false
-ARG INSTALL_NPM_BOWER=false
 ARG INSTALL_NPM_VUE_CLI=false
 ARG INSTALL_NPM_ANGULAR_CLI=false
 
@@ -147,12 +48,6 @@ RUN if [ ${INSTALL_NODE} = true ]; then \
         && nvm install node \
         && nvm use node \
         && nvm alias node \
-        && if [ ${INSTALL_NPM_GULP} = true ]; then \
-        npm install -g gulp \
-        ;fi \
-        && if [ ${INSTALL_NPM_BOWER} = true ]; then \
-        npm install -g bower \
-        ;fi \
         && if [ ${INSTALL_NPM_VUE_CLI} = true ]; then \
         npm install -g @vue/cli \
         ;fi \
@@ -178,19 +73,17 @@ RUN if [ ${INSTALL_NODE} = true ]; then \
 USER root
 RUN if [ ${INSTALL_NODE} = true ]; then \
     echo "" >> ~/.bashrc && \
-        echo 'export NVM_DIR="/home/alex/.nvm"' >> ~/.bashrc && \
+        echo 'export NVM_DIR="/home/auser/.nvm"' >> ~/.bashrc && \
         echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm' >> ~/.bashrc \
 ;fi
 # Add PATH for node
-ENV PATH $PATH:/home/alex/.node-bin
+ENV PATH $PATH:/home/auser/.node-bin
 
 # Make it so the node modules can be executed with 'docker-compose exec'
 # We'll create symbolic links into '/usr/local/bin'.
 RUN if [ ${INSTALL_NODE} = true ]; then \
     find $NVM_DIR -type f -name node -exec ln -s {} /usr/local/bin/node \; && \
         NODE_MODS_DIR="$NVM_DIR/versions/node/$(node -v)/lib/node_modules" && \
-        ln -s $NODE_MODS_DIR/bower/bin/bower /usr/local/bin/bower && \
-        ln -s $NODE_MODS_DIR/gulp/bin/gulp.js /usr/local/bin/gulp && \
         ln -s $NODE_MODS_DIR/npm/bin/npm-cli.js /usr/local/bin/npm && \
         ln -s $NODE_MODS_DIR/npm/bin/npx-cli.js /usr/local/bin/npx && \
         ln -s $NODE_MODS_DIR/vue-cli/bin/vue /usr/local/bin/vue && \
@@ -201,7 +94,7 @@ RUN if [ ${INSTALL_NODE} = true ]; then \
 #-----------------------------------
 # YARN:
 #-----------------------------------
-USER alex
+USER auser
 
 ARG INSTALL_YARN=false
 ARG YARN_VERSION=latest
@@ -223,12 +116,12 @@ USER root
 
 RUN if [ ${INSTALL_YARN} = true ]; then \
     echo "" >> ~/.bashrc && \
-    echo 'export YARN_DIR="/home/alex/.yarn"' >> ~/.bashrc && \
+    echo 'export YARN_DIR="/home/auser/.yarn"' >> ~/.bashrc && \
     echo 'export PATH="$YARN_DIR/bin:$PATH"' >> ~/.bashrc \
 ;fi
 
 # Add PATH for YARN
-ENV PATH $PATH:/home/alex/.yarn/bin
+ENV PATH $PATH:/home/auser/.yarn/bin
 
 #-----------------------------------
 

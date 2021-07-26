@@ -1,7 +1,7 @@
 server {
     listen 80;
-    server_name hnbmywork-api.test;
-    root /var/www/html/hnbmywork/public;
+    server_name php8.test;
+    root /var/www/html;
     index index.php index.html;
 
     add_header X-Frame-Options "SAMEORIGIN";
@@ -18,8 +18,9 @@ server {
     }
 
     location ~ \.php$ {
-        try_files $uri /index.php =404;
-        fastcgi_pass php:9000;
+        try_files $uri /
+        index.php =404;
+        fastcgi_pass php8-fpm:9000;
         fastcgi_index index.php;
         fastcgi_buffers 16 16k;
         fastcgi_buffer_size 32k;
@@ -34,6 +35,6 @@ server {
         deny all;
     }
 
-    error_log  /var/www/html/logs/hnbmywork-api.test-error.log;
-    access_log /var/www/html/logs/hnbmywork-api.test-access.log;
+    error_log  /var/www/html/logs/alice.test-error.log;
+    access_log /var/www/html/logs/alice.test-access.log;
 }
