@@ -23,8 +23,6 @@ services:
     build: 
       context: ./app
       args:
-        - INSTALL_PHP=${INSTALL_PHP}
-        - PHP_VERSION=${PHP_VERSION}
         - INSTALL_NODE=${INSTALL_NODE}
         - INSTALL_NPM_VUE_CLI=${INSTALL_NPM_VUE_CLI}
         - INSTALL_NPM_ANGULAR_CLI=${INSTALL_NPM_ANGULAR_CLI}

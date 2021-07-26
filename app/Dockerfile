@@ -21,7 +21,6 @@ ENV PGID ${PGID}
 # always run apt update when start and after add new source list, then clean up at end.
 RUN set -xe; \
     apt-get update -yqq && \
-#   pecl channel-update pecl.php.net && \
     groupadd -g ${PGID} auser && \
     useradd -u ${PUID} -g auser -m auser -G docker_env && \
     usermod -p "*" auser -s /bin/bash && \
