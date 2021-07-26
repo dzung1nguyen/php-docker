@@ -53,8 +53,8 @@ services:
       - ${LOCAL_PATH}:${DOCKER_PATH}
       - ./nginx/sites/:/etc/nginx/sites-available
     depends_on:
-      - php
-      # - php8-fpm
+      - php74-fpm
+      # - php80-fpm
     networks:
       - frontend
       - backend
@@ -106,32 +106,31 @@ services:
 #     - frontend
 #     - backend
 
-### php ###########################################
-  php:
+### php74-fpm ###########################################
+  php74-fpm:
     build: 
-      context: ./php
+      context: ./php74-fpm
       args:
         - PHP_VERSION=${PHP_VERSION}
         - docker-in-docker:/certs/client
-    container_name: laravel_php
+    container_name: laravel_php74-fpm
     volumes: 
-      - ./php/php${PHP_VERSION}.ini:/usr/local/etc/php/php.ini
+      - ./php/php7.4.ini:/usr/local/etc/php/php.ini
       - ${LOCAL_PATH}:${DOCKER_PATH}
     ports: 
       - "9000:9000"
     networks: 
       - backend
     depends_on:
-        - app
+      - app
     links:
-        - docker-in-docker
+      - docker-in-docker
 
-# ### php8 ###########################################
-#   php8-fpm:
+# ### php8.0-fpm ###########################################
+#   php80-fpm:
 #     build: 
-#       context: ./php8-fpm
+#       context: ./php80-fpm
 #       args:
-#         - PHP_VERSION=${PHP_VERSION}
 #         - docker-in-docker:/certs/client
 #     container_name: laravel_php8
 #     volumes: 
