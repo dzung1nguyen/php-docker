@@ -1,9 +1,5 @@
-ARG PHP_VERSION=7.4
-FROM php:${PHP_VERSION}-fpm
+FROM php:7.4-fpm
 
-# Use the default  configuration
-ARG PHP_VERSION
- 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
         wget \

@@ -111,7 +111,6 @@ services:
     build: 
       context: ./php74-fpm
       args:
-        - PHP_VERSION=${PHP_VERSION}
         - docker-in-docker:/certs/client
     container_name: laravel_php74-fpm
     volumes: 
@@ -148,7 +147,6 @@ services:
 #   build:
 #     context: ./php-worker
 #     args:
-#       - PHP_VERSION=${PHP_VERSION}
 #   container_name: laravel_php_worker
 #   volumes:
 #     - ${LOCAL_PATH}:${DOCKER_PATH}
