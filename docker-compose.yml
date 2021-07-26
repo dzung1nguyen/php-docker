@@ -54,7 +54,6 @@ services:
       - ./nginx/sites/:/etc/nginx/sites-available
     depends_on:
       - php74-fpm
-      # - php80-fpm
     networks:
       - frontend
       - backend
