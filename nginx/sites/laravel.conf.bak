@@ -1,39 +1,13 @@
 server {
     listen 80;
+    
     server_name larravel-api.test;
+
     root /var/www/html/larravel/public;
-    index index.php index.html;
-
-    add_header X-Frame-Options "SAMEORIGIN";
-    add_header X-XSS-Protection "1; mode=block";
-    add_header X-Content-Type-Options "nosniff";
-
-    charset utf-8;
-
-    location = /favicon.ico { access_log off; log_not_found off; }
-    location = /robots.txt  { access_log off; log_not_found off; }
-
-    location / {
-         try_files $uri $uri/ /index.php$is_args$args;
-    }
-
-    location ~ \.php$ {
-        try_files $uri /index.php =404;
-        fastcgi_pass php74-fpm:9000;
-        fastcgi_index index.php;
-        fastcgi_buffers 16 16k;
-        fastcgi_buffer_size 32k;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        fastcgi_param PATH_INFO $fastcgi_path_info;
-        #fixes timeouts
-        fastcgi_read_timeout 600;
-        include fastcgi_params;
-    }
-
-    location ~ /\.ht {
-        deny all;
-    }
+    
+    include /etc/nginx/conf.d/laravel-php74.conf;
 
     error_log  /var/www/html/logs/larravel-api.test-error.log;
+
     access_log /var/www/html/logs/larravel-api.test-access.log;
 }
