@@ -24,6 +24,7 @@ services:
       context: ./app
       args:
         - INSTALL_NODE=${INSTALL_NODE}
+        - NODE_VERSION=${NODE_VERSION}
         - INSTALL_NPM_VUE_CLI=${INSTALL_NPM_VUE_CLI}
         - INSTALL_NPM_ANGULAR_CLI=${INSTALL_NPM_ANGULAR_CLI}
         - INSTALL_YARN=${INSTALL_YARN}
@@ -113,14 +114,12 @@ services:
         - docker-in-docker:/certs/client
     container_name: laravel_php74-fpm
     volumes: 
-      - ./php/php7.4.ini:/usr/local/etc/php/php.ini
+      - ./php74-fpm/php7.4.ini:/usr/local/etc/php/php.ini
       - ${LOCAL_PATH}:${DOCKER_PATH}
     ports: 
       - "9000:9000"
     networks: 
       - backend
-    depends_on:
-      - app
     links:
       - docker-in-docker
 
@@ -132,7 +131,7 @@ services:
 #         - docker-in-docker:/certs/client
 #     container_name: laravel_php8
 #     volumes: 
-#       - ./php/php8.0.ini:/usr/local/etc/php/php.ini
+#       - ./php80-fpm/php8.0.ini:/usr/local/etc/php/php.ini
 #       - ${LOCAL_PATH}:${DOCKER_PATH}
 #     ports: 
 #       - "9008:9008"

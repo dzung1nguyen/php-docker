@@ -37,6 +37,7 @@ USER auser
 # Check if NVM needs to be installed
 ENV NVM_DIR /home/auser/.nvm
 ARG INSTALL_NODE=false
+ARG NODE_VERSION=v14
 ARG INSTALL_NPM_VUE_CLI=false
 ARG INSTALL_NPM_ANGULAR_CLI=false
 
