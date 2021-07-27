@@ -38,6 +38,7 @@ USER auser
 ENV NVM_DIR /home/auser/.nvm
 ARG INSTALL_NODE=false
 ARG NODE_VERSION=v14
+ENV NODE_VERSION ${NODE_VERSION}
 ARG INSTALL_NPM_VUE_CLI=false
 ARG INSTALL_NPM_ANGULAR_CLI=false
 
@@ -45,9 +46,9 @@ RUN if [ ${INSTALL_NODE} = true ]; then \
     mkdir -p $NVM_DIR && \
     curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash \
         && . $NVM_DIR/nvm.sh \
-        && nvm install node \
-        && nvm use node \
-        && nvm alias node \
+        && nvm install ${NODE_VERSION} \
+        && nvm use ${NODE_VERSION} \
+        && nvm alias ${NODE_VERSION} \
         && if [ ${INSTALL_NPM_VUE_CLI} = true ]; then \
         npm install -g @vue/cli \
         ;fi \
