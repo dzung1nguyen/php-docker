@@ -54,6 +54,7 @@ services:
       - ${LOCAL_PATH}:${DOCKER_PATH}
       - ./nginx/sites/:/etc/nginx/sites-available
       - ./nginx/conf.d/:/etc/nginx/conf.d
+      - ./nginx/ssl/:/etc/nginx/ssl
     depends_on:
       - php74-fpm
     networks:
