@@ -1,15 +1,19 @@
 version: '3'
 
+# https://stackoverflow.com/questions/45915182/docker-compose-sharing-container-between-multiple-projects-by-using-the-same-co
+# Create a network if not exists: docker network create common_network
 networks:
   frontend:
     driver: bridge
   backend:
     driver: bridge
+  common_network:
+    external: true
 
 volumes:
   mysql:
     driver: ${VOLUMES_DRIVER}
-  mysql:
+  postgres:
     driver: ${VOLUMES_DRIVER}
   redis:
     driver: ${VOLUMES_DRIVER}
@@ -31,7 +35,7 @@ services:
         - YARN_VERSION=${YARN_VERSION}
         - PUID=${APP_PUID}
         - PGID=${APP_PGID}
-    container_name: laravel_app
+    container_name: app
     volumes: 
       - ${LOCAL_PATH}:${DOCKER_PATH}
     networks: 
@@ -46,7 +50,7 @@ services:
   nginx:
     build: 
       context: ./nginx
-    container_name: laravel_nginx
+    container_name: nginx
     ports:
       - "80:80"
       - "443:443"
@@ -67,7 +71,7 @@ services:
       context: ./mysql
       args:
         - MYSQL_VERSION=${MYSQL_VERSION}
-    container_name: laravel_mysql
+    container_name: mysql
     tty: true
     ports: 
       - "3306:3306"
@@ -81,32 +85,7 @@ services:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
     networks: 
       - backend
-
-### Redis ################################################
-# redis:
-#   build: ./redis
-#   volumes:
-#     - ${LOCAL_DATA_PATH}/redis:/data
-#   ports:
-#     - "${REDIS_PORT}:6379"
-#   networks:
-#     - backend
-      
-## phpMyAdmin ###########################################
-# phpmyadmin:
-#   build: ./phpmyadmin
-#   environment:
-#     - PMA_ARBITRARY=1
-#     - MYSQL_USER=default
-#     - MYSQL_PASSWORD=secret
-#     - MYSQL_ROOT_PASSWORD=secret
-#   ports:
-#     - "8000:80"
-#   depends_on:
-#     - "mysql"
-#   networks:
-#     - frontend
-#     - backend
+      - common_network
 
 ### php74-fpm ###########################################
   php74-fpm:
@@ -125,41 +104,73 @@ services:
     links:
       - docker-in-docker
 
-# ### php8.0-fpm ###########################################
-#   php80-fpm:
-#     build: 
-#       context: ./php80-fpm
-#       args:
-#         - docker-in-docker:/certs/client
-#     container_name: laravel_php8
-#     volumes: 
-#       - ./php80-fpm/php8.0.ini:/usr/local/etc/php/php.ini
-#       - ${LOCAL_PATH}:${DOCKER_PATH}
-#     ports: 
-#       - "9008:9008"
-#     networks: 
-#       - backend
-#     links:
-#         - docker-in-docker
+### php8.0-fpm ###########################################
+  php80-fpm:
+    build: 
+      context: ./php80-fpm
+      args:
+        - docker-in-docker:/certs/client
+    container_name: laravel_php8
+    volumes: 
+      - ./php80-fpm/php8.0.ini:/usr/local/etc/php/php.ini
+      - ${LOCAL_PATH}:${DOCKER_PATH}
+    ports: 
+      - "9001:9000"
+    networks: 
+      - backend
+    links:
+        - docker-in-docker
 
-### PHP Worker ############################################
-# php-worker:
-#   build:
-#     context: ./php-worker
-#     args:
-#   container_name: laravel_php_worker
-#   volumes:
-#     - ${LOCAL_PATH}:${DOCKER_PATH}
-#     - ./php-worker/conf.d:/etc/supervisor/conf.d
-#     - ./php-worker/logs:/var/log/supervisor
-#   ports:
-#     - 9001:9001
-#   depends_on:
-#     - app
-#   extra_hosts:
-#     - "dockerhost:${DOCKER_HOST_IP}"
-#   networks:
-#     - backend
+## PHP Worker ############################################
+  php-worker:
+    build:
+      context: ./php-worker
+    container_name: php_worker
+    volumes:
+      - ${LOCAL_PATH}:${DOCKER_PATH}
+      - ./php-worker/conf.d:/etc/supervisor/conf.d
+      - ./php-worker/logs:/var/log/supervisor
+    ports:
+      - 9009:9009
+    extra_hosts:
+      - "dockerhost:${DOCKER_HOST_IP}"
+    networks:
+      - backend
+
+### PostgreSQL ###########################################
+  postgres:
+    build:
+      context: ./postgres
+      args:
+        - POSTGRES_VERSION=${POSTGRES_VERSION}
+    container_name: postgres
+    volumes:
+      - ${LOCAL_PATH}/postgres:/var/lib/postgresql/data
+      - ${POSTGRES_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    networks:
+      - backend
+      - common_network
+
+### redis ###########################################
+  redis:
+    build:
+      context: ./redis
+      args:
+        - REDIS_VERSION=${REDIS_VERSION}
+    volumes:
+      - ${LOCAL_DATA_PATH}/redis:/data
+    container_name: redis
+    ports:
+      - "${REDIS_PORT}:6379"
+    networks:
+      - backend
+      - common_network
 
 ### Docker-in-Docker ################################################
   docker-in-docker:

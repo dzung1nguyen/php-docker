@@ -1,5 +1,5 @@
-[program:home_scheduler]
-command=/bin/sh -c "while [ true ]; do (php /var/www/html/home-web/artisan schedule:run --verbose --no-interaction &); sleep 60; done"
+[program:euda_worker]
+command=php /var/www/html/alice-web2/artisan queue:listen --queue=high,default --sleep=3 --tries=1
 autostart=true
 autorestart=true
 startretries=3

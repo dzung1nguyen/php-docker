@@ -1,0 +1,14 @@
+server {
+    listen 80;
+
+    listen 443 ssl;
+    ssl_certificate /etc/nginx/ssl/default.crt;
+    ssl_certificate_key /etc/nginx/ssl/default.key;
+
+    server_name telemed.euda.zukitek.test;
+    root /var/www/html/alice-web2/resources/assets/telemed/dist;
+    index index.html;
+
+    error_log  /var/www/html/logs/telemed.euda.zukitek.test-error.log;
+    access_log /var/www/html/logs/telemed.euda.zukitek.test-access.log;
+}

@@ -10,4 +10,4 @@ RUN chmod uga+x /usr/local/bin/install-php-extensions && sync && \
 # Install composer
 RUN cd /var/tmp/ && curl -s http://getcomposer.org/installer | php && mv ./composer.phar /usr/local/bin/composer
 
-EXPOSE 9008
+EXPOSE 9000

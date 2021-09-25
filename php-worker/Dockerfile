@@ -11,8 +11,10 @@ ADD https://raw.githubusercontent.com/mlocati/docker-php-extension-installer/mas
 
 # PHP extensions https://github.com/mlocati/docker-php-extension-installer
 RUN chmod uga+x /usr/local/bin/install-php-extensions && sync && \
-    install-php-extensions gd imagick intl mysqli pdo_mysql xsl zip
+    install-php-extensions gd imagick intl mysqli pdo_mysql xsl zip exif
  
 COPY ./supervisord.conf /etc/supervisor
  
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+
+EXPOSE 9009
