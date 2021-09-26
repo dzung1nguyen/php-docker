@@ -1,1 +1,1 @@
-docker-compose exec php74-fpm sh
+docker-compose exec php-fpm sh

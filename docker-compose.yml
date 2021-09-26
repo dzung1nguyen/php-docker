@@ -27,7 +27,6 @@ services:
     build: 
       context: ./app
       args:
-        - INSTALL_NODE=${INSTALL_NODE}
         - NODE_VERSION=${NODE_VERSION}
         - INSTALL_NPM_VUE_CLI=${INSTALL_NPM_VUE_CLI}
         - INSTALL_NPM_ANGULAR_CLI=${INSTALL_NPM_ANGULAR_CLI}
@@ -45,6 +44,7 @@ services:
       - "8080:8080"
     links:
       - docker-in-docker
+    restart: ${RESTART_APP}
 
 ### nginx ###########################################
   nginx:
@@ -60,10 +60,64 @@ services:
       - ./nginx/conf.d/:/etc/nginx/conf.d
       - ./nginx/ssl/:/etc/nginx/ssl
     depends_on:
-      - php74-fpm
+      - php-fpm
     networks:
       - frontend
       - backend
+    restart: ${RESTART_NGINX}
+
+### php-fpm ###########################################
+  php-fpm:
+    build: 
+      context: ./php-fpm
+      args:
+        - docker-in-docker:/certs/client
+    container_name: php-fpm
+    volumes: 
+      - ./php-fpm/php7.4.ini:/usr/local/etc/php/php.ini
+      - ${LOCAL_PATH}:${DOCKER_PATH}
+    ports: 
+      - "9000:9000"
+    networks: 
+      - backend
+    links:
+      - docker-in-docker
+    restart: ${RESTART_PHP_FPM}
+
+### php8.0-fpm ###########################################
+  php80-fpm:
+    build: 
+      context: ./php80-fpm
+      args:
+        - docker-in-docker:/certs/client
+    container_name: php80-fpm
+    volumes: 
+      - ./php80-fpm/php8.0.ini:/usr/local/etc/php/php.ini
+      - ${LOCAL_PATH}:${DOCKER_PATH}
+    ports: 
+      - "9001:9000"
+    networks: 
+      - backend
+    links:
+        - docker-in-docker
+    restart: ${RESTART_PHP80_FPM}
+
+## PHP Worker ############################################
+  php-worker:
+    build:
+      context: ./php-worker
+    container_name: php-worker
+    volumes:
+      - ${LOCAL_PATH}:${DOCKER_PATH}
+      - ./php-worker/conf.d:/etc/supervisor/conf.d
+      - ./php-worker/logs:/var/log/supervisor
+    ports:
+      - 9009:9009
+    extra_hosts:
+      - "dockerhost:${DOCKER_HOST_IP}"
+    networks:
+      - backend
+    restart: ${RESTART_WORKER}
 
 ### mysql ###########################################
   mysql:
@@ -86,56 +140,7 @@ services:
     networks: 
       - backend
       - common_network
-
-### php74-fpm ###########################################
-  php74-fpm:
-    build: 
-      context: ./php74-fpm
-      args:
-        - docker-in-docker:/certs/client
-    container_name: laravel_php74-fpm
-    volumes: 
-      - ./php74-fpm/php7.4.ini:/usr/local/etc/php/php.ini
-      - ${LOCAL_PATH}:${DOCKER_PATH}
-    ports: 
-      - "9000:9000"
-    networks: 
-      - backend
-    links:
-      - docker-in-docker
-
-### php8.0-fpm ###########################################
-  php80-fpm:
-    build: 
-      context: ./php80-fpm
-      args:
-        - docker-in-docker:/certs/client
-    container_name: laravel_php8
-    volumes: 
-      - ./php80-fpm/php8.0.ini:/usr/local/etc/php/php.ini
-      - ${LOCAL_PATH}:${DOCKER_PATH}
-    ports: 
-      - "9001:9000"
-    networks: 
-      - backend
-    links:
-        - docker-in-docker
-
-## PHP Worker ############################################
-  php-worker:
-    build:
-      context: ./php-worker
-    container_name: php_worker
-    volumes:
-      - ${LOCAL_PATH}:${DOCKER_PATH}
-      - ./php-worker/conf.d:/etc/supervisor/conf.d
-      - ./php-worker/logs:/var/log/supervisor
-    ports:
-      - 9009:9009
-    extra_hosts:
-      - "dockerhost:${DOCKER_HOST_IP}"
-    networks:
-      - backend
+    restart: ${RESTART_MYSQL}
 
 ### PostgreSQL ###########################################
   postgres:
@@ -156,6 +161,7 @@ services:
     networks:
       - backend
       - common_network
+    restart: ${RESTART_POSTGRES}
 
 ### redis ###########################################
   redis:
@@ -171,6 +177,7 @@ services:
     networks:
       - backend
       - common_network
+    restart: ${RESTART_REDIS}
 
 ### Docker-in-Docker ################################################
   docker-in-docker:

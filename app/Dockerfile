@@ -21,42 +21,39 @@ ENV PGID ${PGID}
 # always run apt update when start and after add new source list, then clean up at end.
 RUN set -xe; \
     apt-get update -yqq && \
-    groupadd -g ${PGID} auser && \
-    useradd -u ${PUID} -g auser -m auser -G docker_env && \
-    usermod -p "*" auser -s /bin/bash && \
+    groupadd -g ${PGID} ubuntu && \
+    useradd -u ${PUID} -g ubuntu -m ubuntu -G docker_env && \
+    usermod -p "*" ubuntu -s /bin/bash && \
     apt-get install -yqq \
     apt-utils
 
-# Start as auser
-USER auser
+# Start as ubuntu
+USER ubuntu
 
 #-----------------------------------
 # NPM:
 #-----------------------------------
 
 # Check if NVM needs to be installed
-ENV NVM_DIR /home/auser/.nvm
-ARG INSTALL_NODE=false
+ENV NVM_DIR /home/ubuntu/.nvm
 ARG NODE_VERSION=v14
 ENV NODE_VERSION ${NODE_VERSION}
 ARG INSTALL_NPM_VUE_CLI=false
 ARG INSTALL_NPM_ANGULAR_CLI=false
 
-RUN if [ ${INSTALL_NODE} = true ]; then \
-    mkdir -p $NVM_DIR && \
+RUN mkdir -p $NVM_DIR && \
     curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash \
-        && . $NVM_DIR/nvm.sh \
-        && nvm install ${NODE_VERSION} \
-        && nvm use ${NODE_VERSION} \
-        && nvm alias ${NODE_VERSION} \
-        && if [ ${INSTALL_NPM_VUE_CLI} = true ]; then \
-        npm install -g @vue/cli \
-        ;fi \
-        && if [ ${INSTALL_NPM_ANGULAR_CLI} = true ]; then \
-        npm install -g @angular/cli \
-        ;fi \
-        && ln -s `npm bin --global` $NVM_DIR/.node-bin \
-;fi
+    && . $NVM_DIR/nvm.sh \
+    && nvm install ${NODE_VERSION} \
+    && nvm use ${NODE_VERSION} \
+    && nvm alias ${NODE_VERSION} \
+    && if [ ${INSTALL_NPM_VUE_CLI} = true ]; then \
+    npm install -g @vue/cli \
+    ;fi \
+    && if [ ${INSTALL_NPM_ANGULAR_CLI} = true ]; then \
+    npm install -g @angular/cli \
+    ;fi \
+    && ln -s `npm bin --global` $NVM_DIR/.node-bin
 
 #-----------------------------------
 # NODE:
@@ -64,38 +61,33 @@ RUN if [ ${INSTALL_NODE} = true ]; then \
 
 # Wouldn't execute when added to the RUN statement in the above block
 # Source NVM when loading bash since ~/.profile isn't loaded on non-login shell
-RUN if [ ${INSTALL_NODE} = true ]; then \
-    echo "" >> ~/.bashrc && \
-        echo 'export NVM_DIR="$HOME/.nvm"' >> ~/.bashrc && \
-        echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm' >> ~/.bashr \
-;fi
+RUN  echo "" >> ~/.bashrc && \
+    echo 'export NVM_DIR="$HOME/.nvm"' >> ~/.bashrc && \
+    echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm' >> ~/.bashr 
 
 # Start as root
 USER root
-RUN if [ ${INSTALL_NODE} = true ]; then \
-    echo "" >> ~/.bashrc && \
-        echo 'export NVM_DIR="/home/auser/.nvm"' >> ~/.bashrc && \
-        echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm' >> ~/.bashrc \
-;fi
+RUN echo "" >> ~/.bashrc && \
+    echo 'export NVM_DIR="/home/ubuntu/.nvm"' >> ~/.bashrc && \
+    echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm' >> ~/.bashrc
+
 # Add PATH for node
-ENV PATH $PATH:/home/auser/.node-bin
+ENV PATH $PATH:/home/ubuntu/.node-bin
 
 # Make it so the node modules can be executed with 'docker-compose exec'
 # We'll create symbolic links into '/usr/local/bin'.
-RUN if [ ${INSTALL_NODE} = true ]; then \
-    find $NVM_DIR -type f -name node -exec ln -s {} /usr/local/bin/node \; && \
-        NODE_MODS_DIR="$NVM_DIR/versions/node/$(node -v)/lib/node_modules" && \
-        ln -s $NODE_MODS_DIR/npm/bin/npm-cli.js /usr/local/bin/npm && \
-        ln -s $NODE_MODS_DIR/npm/bin/npx-cli.js /usr/local/bin/npx && \
-        ln -s $NODE_MODS_DIR/vue-cli/bin/vue /usr/local/bin/vue && \
-        ln -s $NODE_MODS_DIR/vue-cli/bin/vue-init /usr/local/bin/vue-init && \
-        ln -s $NODE_MODS_DIR/vue-cli/bin/vue-list /usr/local/bin/vue-list \
-;fi
+RUN find $NVM_DIR -type f -name node -exec ln -s {} /usr/local/bin/node \; && \
+    NODE_MODS_DIR="$NVM_DIR/versions/node/$(node -v)/lib/node_modules" && \
+    ln -s $NODE_MODS_DIR/npm/bin/npm-cli.js /usr/local/bin/npm && \
+    ln -s $NODE_MODS_DIR/npm/bin/npx-cli.js /usr/local/bin/npx && \
+    ln -s $NODE_MODS_DIR/vue-cli/bin/vue /usr/local/bin/vue && \
+    ln -s $NODE_MODS_DIR/vue-cli/bin/vue-init /usr/local/bin/vue-init && \
+    ln -s $NODE_MODS_DIR/vue-cli/bin/vue-list /usr/local/bin/vue-list
 
 #-----------------------------------
 # YARN:
 #-----------------------------------
-USER auser
+USER ubuntu
 
 ARG INSTALL_YARN=false
 ARG YARN_VERSION=latest
@@ -117,12 +109,12 @@ USER root
 
 RUN if [ ${INSTALL_YARN} = true ]; then \
     echo "" >> ~/.bashrc && \
-    echo 'export YARN_DIR="/home/auser/.yarn"' >> ~/.bashrc && \
+    echo 'export YARN_DIR="/home/ubuntu/.yarn"' >> ~/.bashrc && \
     echo 'export PATH="$YARN_DIR/bin:$PATH"' >> ~/.bashrc \
 ;fi
 
 # Add PATH for YARN
-ENV PATH $PATH:/home/auser/.yarn/bin
+ENV PATH $PATH:/home/ubuntu/.yarn/bin
 
 #-----------------------------------
 

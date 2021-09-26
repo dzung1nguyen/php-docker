@@ -1,1 +1,1 @@
-docker-compose exec --user=auser app bash
+docker-compose exec --user=ubuntu app bash
