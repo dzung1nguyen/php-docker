@@ -1,56 +1,48 @@
 version: '3'
 
-# https://stackoverflow.com/questions/45915182/docker-compose-sharing-container-between-multiple-projects-by-using-the-same-co
-# Create a network if not exists: docker network create common_network
 networks:
   frontend:
     driver: bridge
   backend:
     driver: bridge
-  common_network:
-    external: true
 
 volumes:
   mysql:
-    driver: ${VOLUMES_DRIVER}
-  postgres:
-    driver: ${VOLUMES_DRIVER}
-  redis:
     driver: ${VOLUMES_DRIVER}
   docker-in-docker:
     driver: ${VOLUMES_DRIVER}
 
 services: 
   
-### app ###########################################
-  app:
-    build: 
-      context: ./app
-      args:
-        - NODE_VERSION=${NODE_VERSION}
-        - INSTALL_NPM_VUE_CLI=${INSTALL_NPM_VUE_CLI}
-        - INSTALL_NPM_ANGULAR_CLI=${INSTALL_NPM_ANGULAR_CLI}
-        - INSTALL_YARN=${INSTALL_YARN}
-        - YARN_VERSION=${YARN_VERSION}
-        - PUID=${APP_PUID}
-        - PGID=${APP_PGID}
-    container_name: app
-    volumes: 
-      - ${LOCAL_PATH}:${DOCKER_PATH}
-    networks: 
-      - backend
-    ports:
-      - "9527:9527"
-      - "8080:8080"
-    links:
-      - docker-in-docker
-    restart: ${RESTART_APP}
+# ### app ###########################################
+#   app:
+#     build: 
+#       context: ./app
+#       args:
+#         - NODE_VERSION=${NODE_VERSION}
+#         - INSTALL_NPM_VUE_CLI=${INSTALL_NPM_VUE_CLI}
+#         - INSTALL_NPM_ANGULAR_CLI=${INSTALL_NPM_ANGULAR_CLI}
+#         - INSTALL_YARN=${INSTALL_YARN}
+#         - YARN_VERSION=${YARN_VERSION}
+#         - PUID=${APP_PUID}
+#         - PGID=${APP_PGID}
+#     container_name: mm_app
+#     volumes: 
+#       - ${LOCAL_PATH}:${DOCKER_PATH}
+#     networks: 
+#       - backend
+#     ports:
+#       - "9527:9527"
+#       - "8080:8080"
+#     links:
+#       - docker-in-docker
+#     restart: ${RESTART_APP}
 
 ### nginx ###########################################
   nginx:
     build: 
       context: ./nginx
-    container_name: nginx
+    container_name: mm_nginx
     ports:
       - "80:80"
       - "443:443"
@@ -60,19 +52,20 @@ services:
       - ./nginx/conf.d/:/etc/nginx/conf.d
       - ./nginx/ssl/:/etc/nginx/ssl
     depends_on:
-      - php-fpm
+      - php74
+      - php80
     networks:
       - frontend
       - backend
     restart: ${RESTART_NGINX}
 
 ### php-fpm ###########################################
-  php-fpm:
+  php74:
     build: 
       context: ./php-fpm
       args:
         - docker-in-docker:/certs/client
-    container_name: php-fpm
+    container_name: mm_php74
     volumes: 
       - ./php-fpm/php7.4.ini:/usr/local/etc/php/php.ini
       - ${LOCAL_PATH}:${DOCKER_PATH}
@@ -85,12 +78,12 @@ services:
     restart: ${RESTART_PHP_FPM}
 
 ### php8.0-fpm ###########################################
-  php80-fpm:
+  php80:
     build: 
       context: ./php80-fpm
       args:
         - docker-in-docker:/certs/client
-    container_name: php80-fpm
+    container_name: mm_php80
     volumes: 
       - ./php80-fpm/php8.0.ini:/usr/local/etc/php/php.ini
       - ${LOCAL_PATH}:${DOCKER_PATH}
@@ -106,7 +99,7 @@ services:
   php-worker:
     build:
       context: ./php-worker
-    container_name: php-worker
+    container_name: mm_php-worker
     volumes:
       - ${LOCAL_PATH}:${DOCKER_PATH}
       - ./php-worker/conf.d:/etc/supervisor/conf.d
@@ -125,7 +118,7 @@ services:
       context: ./mysql
       args:
         - MYSQL_VERSION=${MYSQL_VERSION}
-    container_name: mysql
+    container_name: mm_mysql
     tty: true
     ports: 
       - "3306:3306"
@@ -139,45 +132,42 @@ services:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
     networks: 
       - backend
-      - common_network
     restart: ${RESTART_MYSQL}
 
-### PostgreSQL ###########################################
-  postgres:
-    build:
-      context: ./postgres
-      args:
-        - POSTGRES_VERSION=${POSTGRES_VERSION}
-    container_name: postgres
-    volumes:
-      - ${LOCAL_PATH}/postgres:/var/lib/postgresql/data
-      - ${POSTGRES_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
-    ports:
-      - "${POSTGRES_PORT}:5432"
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    networks:
-      - backend
-      - common_network
-    restart: ${RESTART_POSTGRES}
+# ### PostgreSQL ###########################################
+#   postgres:
+#     build:
+#       context: ./postgres
+#       args:
+#         - POSTGRES_VERSION=${POSTGRES_VERSION}
+#     container_name: postgres
+#     volumes:
+#       - ${LOCAL_PATH}/postgres:/var/lib/postgresql/data
+#       - ${POSTGRES_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
+#     ports:
+#       - "${POSTGRES_PORT}:5432"
+#     environment:
+#       - POSTGRES_DB=${POSTGRES_DB}
+#       - POSTGRES_USER=${POSTGRES_USER}
+#       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+#     networks:
+#       - backend
+#     restart: ${RESTART_POSTGRES}
 
-### redis ###########################################
-  redis:
-    build:
-      context: ./redis
-      args:
-        - REDIS_VERSION=${REDIS_VERSION}
-    volumes:
-      - ${LOCAL_DATA_PATH}/redis:/data
-    container_name: redis
-    ports:
-      - "${REDIS_PORT}:6379"
-    networks:
-      - backend
-      - common_network
-    restart: ${RESTART_REDIS}
+# ### redis ###########################################
+#   redis:
+#     build:
+#       context: ./redis
+#       args:
+#         - REDIS_VERSION=${REDIS_VERSION}
+#     volumes:
+#       - ${LOCAL_DATA_PATH}/redis:/data
+#     container_name: redis
+#     ports:
+#       - "${REDIS_PORT}:6379"
+#     networks:
+#       - backend
+#     restart: ${RESTART_REDIS}
 
 ### Docker-in-Docker ################################################
   docker-in-docker:
