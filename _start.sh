@@ -1,1 +1,1 @@
-docker-compose up -d app php-fpm mysql nginx
+docker-compose up -d php74 mysql nginx

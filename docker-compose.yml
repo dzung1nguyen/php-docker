@@ -1,22 +1,10 @@
 version: '3'
 
-networks:
-  frontend:
-    driver: bridge
-  backend:
-    driver: bridge
+services:
 
-volumes:
-  mysql:
-    driver: ${VOLUMES_DRIVER}
-  docker-in-docker:
-    driver: ${VOLUMES_DRIVER}
-
-services: 
-  
 # ### app ###########################################
 #   app:
-#     build: 
+#     build:
 #       context: ./app
 #       args:
 #         - NODE_VERSION=${NODE_VERSION}
@@ -27,20 +15,20 @@ services:
 #         - PUID=${APP_PUID}
 #         - PGID=${APP_PGID}
 #     container_name: mm_app
-#     volumes: 
+#     volumes:
 #       - ${LOCAL_PATH}:${DOCKER_PATH}
-#     networks: 
+#     networks:
 #       - backend
 #     ports:
 #       - "9527:9527"
 #       - "8080:8080"
 #     links:
 #       - docker-in-docker
-#     restart: ${RESTART_APP}
+#     restart: "no"
 
 ### nginx ###########################################
   nginx:
-    build: 
+    build:
       context: ./nginx
     container_name: mm_nginx
     ports:
@@ -53,64 +41,87 @@ services:
       - ./nginx/ssl/:/etc/nginx/ssl
     depends_on:
       - php74
-      - php80
+      - php81
+      # - php80
     networks:
       - frontend
       - backend
-    restart: ${RESTART_NGINX}
+    restart: "no"
 
-### php-fpm ###########################################
+### php74-fpm ###########################################
   php74:
-    build: 
-      context: ./php-fpm
+    build:
+      context: ./php74-fpm
       args:
-        - docker-in-docker:/certs/client
+        - PUID=${PUID}
+        - PGID=${PGID}
     container_name: mm_php74
-    volumes: 
-      - ./php-fpm/php7.4.ini:/usr/local/etc/php/php.ini
+    volumes:
+      - ./php74-fpm/php7.4.ini:/usr/local/etc/php/php.ini
       - ${LOCAL_PATH}:${DOCKER_PATH}
-    ports: 
+    ports:
       - "9000:9000"
-    networks: 
+    networks:
       - backend
     links:
       - docker-in-docker
-    restart: ${RESTART_PHP_FPM}
+    restart: "no"
 
-### php8.0-fpm ###########################################
-  php80:
-    build: 
-      context: ./php80-fpm
-      args:
-        - docker-in-docker:/certs/client
-    container_name: mm_php80
-    volumes: 
-      - ./php80-fpm/php8.0.ini:/usr/local/etc/php/php.ini
-      - ${LOCAL_PATH}:${DOCKER_PATH}
-    ports: 
-      - "9001:9000"
-    networks: 
-      - backend
-    links:
-        - docker-in-docker
-    restart: ${RESTART_PHP80_FPM}
+# ### php8.0-fpm ###########################################
+#   php80:
+#     build:
+#       context: ./php80-fpm
+#       args:
+#         - PUID=${PUID}
+#         - PGID=${PGID}
+#     container_name: mm_php80
+#     volumes:
+#       - ./php80-fpm/php8.0.ini:/usr/local/etc/php/php.ini
+#       - ${LOCAL_PATH}:${DOCKER_PATH}
+#     ports:
+#       - "9001:9000"
+#     networks:
+#       - backend
+#     links:
+#       - docker-in-docker
+#     restart: "no"
 
-## PHP Worker ############################################
-  php-worker:
+### php8.1-fpm ###########################################
+  php81:
     build:
-      context: ./php-worker
-    container_name: mm_php-worker
+      context: ./php81-fpm
+      args:
+        - PUID=${PUID}
+        - PGID=${PGID}
+    container_name: mm_php81
     volumes:
+      - ./php81-fpm/php8.1.ini:/usr/local/etc/php/php.ini
       - ${LOCAL_PATH}:${DOCKER_PATH}
-      - ./php-worker/conf.d:/etc/supervisor/conf.d
-      - ./php-worker/logs:/var/log/supervisor
     ports:
-      - 9009:9009
-    extra_hosts:
-      - "dockerhost:${DOCKER_HOST_IP}"
+      - "9002:9000"
+      - "9003:9003"
     networks:
       - backend
-    restart: ${RESTART_WORKER}
+    links:
+      - docker-in-docker
+    restart: "no"
+
+# ## PHP Worker ############################################
+#   php-worker:
+#     build:
+#       context: ./php-worker
+#     container_name: mm_php-worker
+#     volumes:
+#       - ${LOCAL_PATH}:${DOCKER_PATH}
+#       - ./php-worker/conf.d:/etc/supervisor/conf.d
+#       - ./php-worker/logs:/var/log/supervisor
+#     ports:
+#       - 9009:9009
+#     extra_hosts:
+#       - "dockerhost:${DOCKER_HOST_IP}"
+#     networks:
+#       - backend
+#     restart: "no"
 
 ### mysql ###########################################
   mysql:
@@ -120,9 +131,9 @@ services:
         - MYSQL_VERSION=${MYSQL_VERSION}
     container_name: mm_mysql
     tty: true
-    ports: 
+    ports:
       - "3306:3306"
-    volumes: 
+    volumes:
       - ${LOCAL_DATA_PATH}/mysql:/var/lib/mysql
       - ./mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     environment:
@@ -130,29 +141,28 @@ services:
       - MYSQL_USER=${MYSQL_USER}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-    networks: 
+    networks:
       - backend
-    restart: ${RESTART_MYSQL}
+    restart: "no"
 
-# ### PostgreSQL ###########################################
-#   postgres:
-#     build:
-#       context: ./postgres
-#       args:
-#         - POSTGRES_VERSION=${POSTGRES_VERSION}
-#     container_name: postgres
-#     volumes:
-#       - ${LOCAL_PATH}/postgres:/var/lib/postgresql/data
-#       - ${POSTGRES_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
-#     ports:
-#       - "${POSTGRES_PORT}:5432"
-#     environment:
-#       - POSTGRES_DB=${POSTGRES_DB}
-#       - POSTGRES_USER=${POSTGRES_USER}
-#       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-#     networks:
-#       - backend
-#     restart: ${RESTART_POSTGRES}
+### PostgreSQL ###########################################
+  postgres:
+    build:
+      context: ./postgres
+      args:
+        - POSTGRES_VERSION=${POSTGRES_VERSION}
+    container_name: postgres
+    volumes:
+      - ${LOCAL_PATH}/postgres:/var/lib/postgresql/data
+      - ./postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    networks:
+      - backend
+    restart: "no"
 
 # ### redis ###########################################
 #   redis:
@@ -167,7 +177,38 @@ services:
 #       - "${REDIS_PORT}:6379"
 #     networks:
 #       - backend
-#     restart: ${RESTART_REDIS}
+#     restart: "no"
+
+### ElasticSearch ########################################
+  # elasticsearch:
+  #   build:
+  #     context: ./elasticsearch
+  #     args:
+  #       - ELK_VERSION=${ELK_VERSION}
+  #   volumes:
+  #     - elasticsearch:/usr/share/elasticsearch/data
+  #   environment:
+  #     - cluster.name=local-cluster
+  #     - node.name=local-node
+  #     - bootstrap.memory_lock=true
+  #     - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+  #     - cluster.initial_master_nodes=local-node
+  #     - xpack.security.enabled=false
+  #   ulimits:
+  #     memlock:
+  #       soft: -1
+  #       hard: -1
+  #     nofile:
+  #       soft: 65536
+  #       hard: 65536
+  #   ports:
+  #     - "${ELASTICSEARCH_HOST_HTTP_PORT}:9200"
+  #     - "${ELASTICSEARCH_HOST_TRANSPORT_PORT}:9300"
+  #   depends_on:
+  #     - php81
+  #   networks:
+  #     - frontend
+  #     - backend
 
 ### Docker-in-Docker ################################################
   docker-in-docker:
@@ -180,3 +221,19 @@ services:
       - 2375
     networks:
       - backend
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+
+volumes:
+  mysql:
+    driver: ${VOLUMES_DRIVER}
+  postgres:
+    driver: ${VOLUMES_DRIVER}
+  docker-in-docker:
+    driver: ${VOLUMES_DRIVER}
+  elasticsearch:
+    driver: ${VOLUMES_DRIVER}

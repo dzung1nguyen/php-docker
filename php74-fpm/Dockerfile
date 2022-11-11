@@ -1,4 +1,4 @@
-FROM php:8.0-fpm-alpine
+FROM php:7.4-fpm-alpine
 
 # Download script to install PHP extensions and dependencies
 ADD https://raw.githubusercontent.com/mlocati/docker-php-extension-installer/master/install-php-extensions /usr/local/bin/
@@ -6,7 +6,6 @@ ADD https://raw.githubusercontent.com/mlocati/docker-php-extension-installer/mas
 # PHP extensions https://github.com/mlocati/docker-php-extension-installer
 RUN chmod uga+x /usr/local/bin/install-php-extensions && sync && \
     install-php-extensions gd imagick intl mysqli pdo_mysql xsl zip exif
-
 
 # Configure non-root user.
 # www-data nginx user
