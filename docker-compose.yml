@@ -9,40 +9,14 @@ networks:
 volumes:
   mysql:
     driver: ${VOLUMES_DRIVER}
-  docker-in-docker:
-    driver: ${VOLUMES_DRIVER}
 
-services: 
-  
-# ### app ###########################################
-#   app:
-#     build: 
-#       context: ./app
-#       args:
-#         - NODE_VERSION=${NODE_VERSION}
-#         - INSTALL_NPM_VUE_CLI=${INSTALL_NPM_VUE_CLI}
-#         - INSTALL_NPM_ANGULAR_CLI=${INSTALL_NPM_ANGULAR_CLI}
-#         - INSTALL_YARN=${INSTALL_YARN}
-#         - YARN_VERSION=${YARN_VERSION}
-#         - PUID=${APP_PUID}
-#         - PGID=${APP_PGID}
-#     container_name: mm_app
-#     volumes: 
-#       - ${LOCAL_PATH}:${DOCKER_PATH}
-#     networks: 
-#       - backend
-#     ports:
-#       - "9527:9527"
-#       - "8080:8080"
-#     links:
-#       - docker-in-docker
-#     restart: ${RESTART_APP}
+services:
 
 ### nginx ###########################################
   nginx:
-    build: 
+    build:
       context: ./nginx
-    container_name: mm_nginx
+    container_name: nginx
     ports:
       - "80:80"
       - "443:443"
@@ -50,67 +24,29 @@ services:
       - ${LOCAL_PATH}:${DOCKER_PATH}
       - ./nginx/sites/:/etc/nginx/sites-available
       - ./nginx/conf.d/:/etc/nginx/conf.d
-      - ./nginx/ssl/:/etc/nginx/ssl
+      - ./certbot/conf/:/etc/nginx/ssl
     depends_on:
-      - php74
-      - php80
+      - php
     networks:
-      - frontend
-      - backend
-    restart: ${RESTART_NGINX}
+      backend:
+        aliases:
+          - website-pm-sg.test
+          - unified-portal.test
+    restart: "no"
 
-### php-fpm ###########################################
-  php74:
-    build: 
-      context: ./php-fpm
-      args:
-        - docker-in-docker:/certs/client
-    container_name: mm_php74
-    volumes: 
-      - ./php-fpm/php7.4.ini:/usr/local/etc/php/php.ini
-      - ${LOCAL_PATH}:${DOCKER_PATH}
-    ports: 
-      - "9000:9000"
-    networks: 
-      - backend
-    links:
-      - docker-in-docker
-    restart: ${RESTART_PHP_FPM}
-
-### php8.0-fpm ###########################################
-  php80:
-    build: 
-      context: ./php80-fpm
-      args:
-        - docker-in-docker:/certs/client
-    container_name: mm_php80
-    volumes: 
-      - ./php80-fpm/php8.0.ini:/usr/local/etc/php/php.ini
-      - ${LOCAL_PATH}:${DOCKER_PATH}
-    ports: 
-      - "9001:9000"
-    networks: 
-      - backend
-    links:
-        - docker-in-docker
-    restart: ${RESTART_PHP80_FPM}
-
-## PHP Worker ############################################
-  php-worker:
+### php ###########################################
+  php:
     build:
-      context: ./php-worker
-    container_name: mm_php-worker
+      context: ./php
+    container_name: php
     volumes:
+      - ./php/php8.1.ini:/usr/local/etc/php/php.ini
       - ${LOCAL_PATH}:${DOCKER_PATH}
-      - ./php-worker/conf.d:/etc/supervisor/conf.d
-      - ./php-worker/logs:/var/log/supervisor
     ports:
-      - 9009:9009
-    extra_hosts:
-      - "dockerhost:${DOCKER_HOST_IP}"
+      - "9000:9000"
     networks:
       - backend
-    restart: ${RESTART_WORKER}
+    restart: "no"
 
 ### mysql ###########################################
   mysql:
@@ -118,41 +54,49 @@ services:
       context: ./mysql
       args:
         - MYSQL_VERSION=${MYSQL_VERSION}
-    container_name: mm_mysql
+    container_name: mysql
     tty: true
-    ports: 
+    ports:
       - "3306:3306"
-    volumes: 
+    volumes:
       - ${LOCAL_DATA_PATH}/mysql:/var/lib/mysql
       - ./mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     environment:
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-    networks: 
+    networks:
       - backend
-    restart: ${RESTART_MYSQL}
+    restart: "no"
 
-# ### PostgreSQL ###########################################
-#   postgres:
-#     build:
-#       context: ./postgres
-#       args:
-#         - POSTGRES_VERSION=${POSTGRES_VERSION}
-#     container_name: postgres
-#     volumes:
-#       - ${LOCAL_PATH}/postgres:/var/lib/postgresql/data
-#       - ${POSTGRES_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
-#     ports:
-#       - "${POSTGRES_PORT}:5432"
-#     environment:
-#       - POSTGRES_DB=${POSTGRES_DB}
-#       - POSTGRES_USER=${POSTGRES_USER}
-#       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-#     networks:
-#       - backend
-#     restart: ${RESTART_POSTGRES}
+  certbot:
+      container_name: certbot
+      image: certbot/certbot:latest
+      command: certonly --webroot --webroot-path=/var/www/html/certbot --email dzung1nguyen@gmail.com --agree-tos --no-eff-email -d 7broscore.com -d www.7broscore.com
+      volumes:
+          - ./certbot/conf:/etc/letsencrypt
+          - ./certbot/logs:/var/log/letsencrypt
+          - ./certbot/data:/var/www/html/certbot
+      networks:
+        - backend
+
+### PostgreSQL ###########################################
+  postgres:
+    build:
+      context: ./postgres
+      args:
+        - POSTGRES_VERSION=${POSTGRES_VERSION}
+    container_name: postgres
+    volumes:
+      - ${LOCAL_DATA_PATH}/postgres:/var/lib/postgresql/data
+      - ${POSTGRES_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    networks:
+      - backend
+    restart: ${RESTART_POSTGRES}
 
 # ### redis ###########################################
 #   redis:
@@ -169,14 +113,14 @@ services:
 #       - backend
 #     restart: ${RESTART_REDIS}
 
-### Docker-in-Docker ################################################
-  docker-in-docker:
-    image: docker:dind
-    privileged: true
+  jenkins:
+    build:
+      context: ./jenkins
+    container_name: jenkins
+    ports:
+      - 8080:8080
+      - 50000:50000
     volumes:
-      - ${LOCAL_PATH}:${DOCKER_PATH}
-      - ${LOCAL_DATA_PATH}/dind:/var/lib/docker
-    expose:
-      - 2375
+      - ./jenkins/jenkins_home:/var/jenkins_home
     networks:
       - backend
