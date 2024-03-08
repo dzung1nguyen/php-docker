@@ -5,6 +5,8 @@ networks:
     driver: bridge
   backend:
     driver: bridge
+  shared:
+    external: true
 
 volumes:
   mysql:
@@ -24,14 +26,16 @@ services:
       - ${LOCAL_PATH}:${DOCKER_PATH}
       - ./nginx/sites/:/etc/nginx/sites-available
       - ./nginx/conf.d/:/etc/nginx/conf.d
-      - ./certbot/conf/:/etc/nginx/ssl
+      - ./nginx/ssl/:/etc/nginx/ssl
     depends_on:
       - php
+      - php7
     networks:
       backend:
         aliases:
           - website-pm-sg.test
           - unified-portal.test
+          - mm-crm.test
     restart: "no"
 
 ### php ###########################################
@@ -44,6 +48,21 @@ services:
       - ${LOCAL_PATH}:${DOCKER_PATH}
     ports:
       - "9000:9000"
+      - "9090:9090"
+    networks:
+      - backend
+    restart: "no"
+
+  ### php ###########################################
+  php7:
+    build:
+      context: ./php7
+    container_name: php7
+    volumes:
+      - ./php/php7.4.ini:/usr/local/etc/php/php.ini
+      - ${LOCAL_PATH}:${DOCKER_PATH}
+    ports:
+      - "9007:9007"
     networks:
       - backend
     restart: "no"
@@ -65,18 +84,8 @@ services:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
     networks:
       - backend
+      - shared
     restart: "no"
-
-  certbot:
-      container_name: certbot
-      image: certbot/certbot:latest
-      command: certonly --webroot --webroot-path=/var/www/html/certbot --email dzung1nguyen@gmail.com --agree-tos --no-eff-email -d 7broscore.com -d www.7broscore.com
-      volumes:
-          - ./certbot/conf:/etc/letsencrypt
-          - ./certbot/logs:/var/log/letsencrypt
-          - ./certbot/data:/var/www/html/certbot
-      networks:
-        - backend
 
 ### PostgreSQL ###########################################
   postgres:
@@ -112,15 +121,3 @@ services:
 #     networks:
 #       - backend
 #     restart: ${RESTART_REDIS}
-
-  jenkins:
-    build:
-      context: ./jenkins
-    container_name: jenkins
-    ports:
-      - 8080:8080
-      - 50000:50000
-    volumes:
-      - ./jenkins/jenkins_home:/var/jenkins_home
-    networks:
-      - backend

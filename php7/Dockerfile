@@ -1,4 +1,4 @@
-FROM php:8.1-fpm
+FROM php:7.4-fpm
 
 # Configure non-root user.
 RUN groupmod -o -g 1000 www-data && \
@@ -18,12 +18,6 @@ RUN set -xe; \
     zip \
     unzip
 
-# Install nodejs
-RUN cd /home/www-data && curl -sL https://deb.nodesource.com/setup_18.x -o nodesource_setup.sh
-RUN ["sh",  "/home/www-data/nodesource_setup.sh"]
-RUN apt-get update && apt-get install nodejs -y
-RUN npm install --global yarn
-
 # Download script to install PHP extensions and dependencies
 ADD https://raw.githubusercontent.com/mlocati/docker-php-extension-installer/master/install-php-extensions /usr/local/bin/
 
@@ -42,3 +36,5 @@ RUN cd /var/tmp/ && curl -s http://getcomposer.org/installer | php && mv ./compo
 WORKDIR /var/www
 
 USER www-data
+
+EXPOSE 9007
