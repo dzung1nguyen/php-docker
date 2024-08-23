@@ -29,13 +29,16 @@ services:
       - ./nginx/ssl/:/etc/nginx/ssl
     depends_on:
       - php
-      - php7
+      - php82
+      # - php7
     networks:
       backend:
         aliases:
           - website-pm-sg.test
           - unified-portal.test
           - mm-crm.test
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: "no"
 
 ### php ###########################################
@@ -53,19 +56,33 @@ services:
       - backend
     restart: "no"
 
-  ### php ###########################################
-  php7:
+  php82:
     build:
-      context: ./php7
-    container_name: php7
+      context: ./php82
+    container_name: php82
     volumes:
-      - ./php/php7.4.ini:/usr/local/etc/php/php.ini
+      - ./php82/php8.2.ini:/usr/local/etc/php/php.ini
       - ${LOCAL_PATH}:${DOCKER_PATH}
     ports:
-      - "9007:9007"
+      - "9002:9002"
+      - "9092:9092"
     networks:
       - backend
     restart: "no"
+
+# ### php 7 ###########################################
+#   php7:
+#     build:
+#       context: ./php7
+#     container_name: php7
+#     volumes:
+#       - ./php/php7.4.ini:/usr/local/etc/php/php.ini
+#       - ${LOCAL_PATH}:${DOCKER_PATH}
+#     ports:
+#       - "9007:9007"
+#     networks:
+#       - backend
+#     restart: "no"
 
 ### mysql ###########################################
   mysql:
@@ -107,17 +124,17 @@ services:
       - backend
     restart: ${RESTART_POSTGRES}
 
-# ### redis ###########################################
-#   redis:
-#     build:
-#       context: ./redis
-#       args:
-#         - REDIS_VERSION=${REDIS_VERSION}
-#     volumes:
-#       - ${LOCAL_DATA_PATH}/redis:/data
-#     container_name: redis
-#     ports:
-#       - "${REDIS_PORT}:6379"
-#     networks:
-#       - backend
-#     restart: ${RESTART_REDIS}
+### redis ###########################################
+  redis:
+    build:
+      context: ./redis
+      args:
+        - REDIS_VERSION=${REDIS_VERSION}
+    volumes:
+      - ${LOCAL_DATA_PATH}/redis:/data
+    container_name: redis
+    ports:
+      - "${REDIS_PORT}:6379"
+    networks:
+      - backend
+    restart: ${RESTART_REDIS}

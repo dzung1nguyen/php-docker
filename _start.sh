@@ -1,1 +1,1 @@
-docker-compose up -d php mysql nginx postgres
+docker-compose up -d php php82 mysql nginx postgres redis
